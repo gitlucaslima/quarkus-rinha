@@ -23,7 +23,7 @@ services:
     ports:
       - "27018:27017"
     volumes:
-      - ./script.sql:/docker-entrypoint-initdb.d/script.sql
+      - ./script.sql:/docker-entrypoint-initdb.d/script.sql:r
     deploy:
       resources:
         limits:
