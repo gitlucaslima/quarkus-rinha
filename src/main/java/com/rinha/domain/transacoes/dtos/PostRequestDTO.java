@@ -11,14 +11,10 @@ import lombok.Setter;
 @Setter
 public class PostRequestDTO{
 
-    @NotNull(message = "Valor é obrigatório")
-    @Min(value = 1, message = "Valor deve ser maior que 0")
     private Long valor;
 
-    @NotNull(message = "Tipo é obrigatório")
     private TipoTransacao tipo;
 
-    @NotEmpty(message = "Descrição é obrigatória")
     private String descricao;
 
 

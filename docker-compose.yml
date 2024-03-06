@@ -3,12 +3,10 @@ version: "3.5"
 services:
   api01:
     &api
-    image: gitlucaslima/quarkus-api
+    image: quarkus/api
     hostname: api01
     environment:
       - DB_HOSTNAME=db
-    ports:
-      - "8081:8080"
     depends_on:
       - db
     deploy:
@@ -16,6 +14,30 @@ services:
         limits:
           cpus: "0.6"
           memory: "200MB"
+    networks:
+      - default
+
+  api02:
+    <<: *api
+    hostname: api02
+    environment:
+      - DB_HOSTNAME=db
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api01
+      - api02
+    ports:
+      # Obrigatório expor/usar a porta 9999 no load balancer!
+      - "9999:9999"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.17"
+          memory: "10MB"
 
   db:
     image: mongo
@@ -29,3 +51,10 @@ services:
         limits:
           cpus: "0.6"
           memory: "200MB"
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    name: rinha-nginx-2024q1

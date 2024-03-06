@@ -33,6 +33,14 @@ public class TransacaoService {
         novaTransacao.setDescricao(body.getDescricao());
         novaTransacao.setData(String.valueOf(Timestamp.from(Instant.now())));
 
+        if (body.getDescricao().length() > 10) {
+            throw new IllegalArgumentException("Descrição deve ter no máximo 10 caracteres");
+        }
+
+        if (!(body.getValor() instanceof Long)) {
+            throw new IllegalArgumentException("Valor não é um numero valido");
+        }
+
         // Verificar se o cliente possui limite suficiente antes de persistir a transação
         return clienteRepository.findById(idCliente)
                 .onItem().transformToUni(cliente -> {
