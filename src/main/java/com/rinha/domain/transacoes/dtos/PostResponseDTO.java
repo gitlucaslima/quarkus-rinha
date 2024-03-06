@@ -1,23 +1,19 @@
 package com.rinha.domain.transacoes.dtos;
 
-public class PostResponseDTO {
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class PostResponseDTO{
     private Long limite;
     private Long saldo;
 
-
-    public Long getLimite() {
-        return limite;
-    }
-
-    public void setLimite(Long limite) {
-        this.limite = limite;
-    }
-
-    public Long getSaldo() {
-        return saldo;
-    }
-
-    public void setSaldo(Long saldo) {
-        this.saldo = saldo;
+    @Override
+    public String toString() {
+        return "PostResponseDTO{" +
+                "limite=" + limite +
+                ", saldo=" + saldo +
+                '}';
     }
 }

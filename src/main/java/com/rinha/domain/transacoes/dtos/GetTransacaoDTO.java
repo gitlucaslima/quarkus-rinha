@@ -1,25 +1,23 @@
 package com.rinha.domain.transacoes.dtos;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
+@Getter
+@Setter
 public class GetTransacaoDTO {
 
     private SaldoDTO saldo;
     private List<TransacaoDTO> ultimas_transacoes;
 
-    public SaldoDTO getSaldo() {
-        return saldo;
+    @Override
+    public String toString() {
+        return "GetTransacaoDTO{" +
+                "saldo=" + saldo +
+                ", ultimas_transacoes=" + ultimas_transacoes +
+                '}';
     }
 
-    public void setSaldo(SaldoDTO saldo) {
-        this.saldo = saldo;
-    }
-
-    public List<TransacaoDTO> getUltimas_transacoes() {
-        return ultimas_transacoes;
-    }
-
-    public void setUltimas_transacoes(List<TransacaoDTO> ultimas_transacoes) {
-        this.ultimas_transacoes = ultimas_transacoes;
-    }
 }

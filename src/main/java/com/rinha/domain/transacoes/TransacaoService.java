@@ -1,6 +1,5 @@
 package com.rinha.domain.transacoes;
 
-import com.rinha.domain.clientes.Cliente;
 import com.rinha.domain.clientes.ClienteRepository;
 import com.rinha.domain.transacoes.dtos.*;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
@@ -21,77 +20,44 @@ public class TransacaoService {
     @Inject
     ClienteRepository clienteRepository;
 
-    public Uni<PostResponseDTO> create(Long idClient, PostRequestDTO transacao) {
-        return clienteRepository.findById(idClient).onItem().transformToUni(cliente -> realizarTransacao(cliente, transacao));
+
+    public Uni<PostResponseDTO> realizarTransacao(Long idCliente, PostRequestDTO body) {
+        // Criar uma instância do PostResponseDTO
+        PostResponseDTO response = new PostResponseDTO();
+
+        // Criar uma instância da Transacao
+        Transacao novaTransacao = new Transacao();
+        novaTransacao.setClienteId(idCliente);
+        novaTransacao.setTipo(body.getTipo());
+        novaTransacao.setValor(body.getValor());
+        novaTransacao.setDescricao(body.getDescricao());
+        novaTransacao.setData(String.valueOf(Timestamp.from(Instant.now())));
+
+        // Verificar se o cliente possui limite suficiente antes de persistir a transação
+        return clienteRepository.findById(idCliente)
+                .onItem().transformToUni(cliente -> {
+                    if (body.getTipo().equals(TipoTransacao.c)) {
+                        cliente.setSaldo(cliente.getSaldo() + body.getValor());
+                    } else if (body.getTipo().equals(TipoTransacao.d)) {
+                        long novoSaldo = cliente.getSaldo() - body.getValor();
+                        if (novoSaldo < -cliente.getLimite()) {
+                            throw new IllegalArgumentException("Limite insuficiente para realizar a transação de débito");
+                        }
+                        cliente.setSaldo(cliente.getSaldo() - body.getValor());
+                    } else {
+                        throw new IllegalArgumentException("Tipo de transação não suportado: " + body.getTipo());
+                    }
+
+                    return clienteRepository.persistOrUpdate(cliente).replaceWith(cliente);
+                })
+                .onItem().transformToUni(clienteAtualizado -> transacaoRepository.persist(novaTransacao)
+                        .map(transacaoPersistida -> {
+                            response.setLimite(clienteAtualizado.getLimite());
+                            response.setSaldo(clienteAtualizado.getSaldo());
+                            return response;
+                        }));
     }
 
-    private Uni<PostResponseDTO> realizarTransacao(Cliente clienteAlvo, PostRequestDTO body) {
-        TipoTransacao tipo = body.getTipo();
-
-        if (body.getDescricao().isEmpty() || body.getDescricao().length() > 10) {
-            return Uni.createFrom().failure(new IllegalArgumentException("Limite da descrição para transação é de 10 caracteres"));
-        }
-
-        Uni<Transacao> transacaoUni;
-        if (tipo == TipoTransacao.c) {
-            transacaoUni = realizarTransacaoCredito(clienteAlvo, body);
-        } else if (tipo == TipoTransacao.d) {
-            transacaoUni = realizarTransacaoDebito(clienteAlvo, body);
-        } else {
-            return Uni.createFrom().failure(new IllegalArgumentException("Tipo de transação inválido"));
-        }
-
-        return transacaoUni.onItem().transform(transacao -> {
-            PostResponseDTO response = new PostResponseDTO();
-            preencherResponse(response, clienteAlvo);
-            return response;
-        });
-    }
-
-
-    private Uni<Transacao> realizarTransacaoCredito(Cliente cliente, PostRequestDTO body) {
-        Long saldoAntigo = cliente.getSaldo();
-        cliente.setSaldo(saldoAntigo + body.getValor());
-
-        Transacao transacao = new Transacao();
-        transacao.setTipo(body.getTipo());
-        transacao.setValor(body.getValor());
-        transacao.setDescricao(body.getDescricao());
-        transacao.setData(Timestamp.from(Instant.now()));
-        transacao.setClienteId(cliente.getIdCliente());
-
-        return transacaoRepository.persist(transacao);
-    }
-
-    private Uni<Transacao> realizarTransacaoDebito(Cliente cliente, PostRequestDTO body) {
-        return validarLimiteDisponivel(cliente, body.getValor()).flatMap(valido -> {
-            if (!valido) {
-                return Uni.createFrom().failure(new IllegalArgumentException("Transação de débito excede o limite disponível"));
-            }
-            Long saldoAntigo = cliente.getSaldo();
-            cliente.setSaldo(saldoAntigo - body.getValor());
-
-            Transacao transacao = new Transacao();
-            transacao.setTipo(body.getTipo());
-            transacao.setValor(body.getValor());
-            transacao.setDescricao(body.getDescricao());
-            transacao.setData(Timestamp.from(Instant.now()));
-            transacao.setClienteId(cliente.getIdCliente());
-
-            return transacaoRepository.persist(transacao);
-        });
-    }
-
-    private Uni<Boolean> validarLimiteDisponivel(Cliente cliente, Long valor) {
-        long limiteDisponivel = cliente.getLimite() * -1;
-        return Uni.createFrom().item((cliente.getSaldo() - valor) >= limiteDisponivel);
-    }
-
-
-    private void preencherResponse(PostResponseDTO response, Cliente cliente) {
-        response.setSaldo(cliente.getSaldo());
-        response.setLimite(cliente.getLimite());
-    }
 
     public Uni<GetTransacaoDTO> getExtrato(Long id) {
         return clienteRepository.findById(id).onItem().transformToUni(cliente -> {
@@ -110,7 +76,7 @@ public class TransacaoService {
                         transacaoDTO.setTipo(transacao.getTipo());
                         transacaoDTO.setValor(transacao.getValor());
                         transacaoDTO.setDescricao(transacao.getDescricao());
-                        transacaoDTO.setRealizada_em(transacao.getData());
+                        transacaoDTO.setRealizada_em(Timestamp.valueOf(transacao.getData()));
                         return transacaoDTO;
                     }).collect(Collectors.toList())) // Convertendo Stream para List
                     .onItem().invoke(response::setUltimas_transacoes) // Configurando a resposta com as últimas transações
