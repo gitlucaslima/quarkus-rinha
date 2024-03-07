@@ -7,18 +7,13 @@ services:
     hostname: api01
     environment:
       - DB_HOSTNAME=db
-      - DB_POOL_SIZE=5
-      - WARMUP_ENABLED=true
-      - WARMUP_HOST=http://0.0.0.0:8080
-      - WARMUP_DELAY_SECONDS=3
-      - WARMUP_REQUESTS=50
     depends_on:
       - db
     deploy:
       resources:
         limits:
-          cpus: "0.45"
-          memory: "100MB"
+          cpus: "0.85"   # Distribuir 1 unidade de CPU para api01
+          memory: "180MB" # Distribuir 250MB de memória para api01
     networks:
       - default
 
@@ -36,13 +31,12 @@ services:
       - api01
       - api02
     ports:
-      # Obrigatório expor/usar a porta 9999 no load balancer!
       - "9999:9999"
     deploy:
       resources:
         limits:
-          cpus: "0.20"
-          memory: "30MB"
+          cpus: "0.10"   # Distribuir 0.5 unidades de CPU para nginx
+          memory: "05MB" # Distribuir 50MB de memória para nginx
 
   db:
     image: mongo
@@ -54,18 +48,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.40"
-          memory: "220MB"
-    environment:
-      - MONGO_INITDB_MAX_CONNECTIONS=12
-      - MONGO_INITDB_WORK_MEM=4MB
-      - MONGO_INITDB_SYNC_COMMIT=false
-      - MONGO_INITDB_FSYNC=false
-      - MONGO_INITDB_FULL_PAGE_WRITES=false
-      - MONGO_INITDB_CHECKPOINT_TIMEOUT=600
-      - MONGO_INITDB_SHARED_BUFFERS=16MB
-    networks:
-      - default
+          cpus: "0.75"   # Distribuir 0.5 unidades de CPU para db
+          memory: "185MB" # Distribuir 200MB de memória para db
 
 networks:
   default:
