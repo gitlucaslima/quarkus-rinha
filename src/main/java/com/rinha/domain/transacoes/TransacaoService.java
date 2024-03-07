@@ -22,41 +22,49 @@ public class TransacaoService {
 
 
     public Uni<PostResponseDTO> realizarTransacao(Long idCliente, PostRequestDTO body) {
+
+        // Verificar se o valor é nulo ou menor que 1
+        if (body.getValor() == null || body.getValor() < 1) {
+            return Uni.createFrom().failure(new IllegalArgumentException("Valor deve ser maior que 0"));
+        }
+
+        if (body.getTipo() == null || !body.getTipo().equals("c") && !body.getTipo().equals("d")) {
+            return Uni.createFrom().failure(new IllegalArgumentException("Tipo é invalido, deve ser 'c' para credito e 'd' para debito"));
+        }
+
+        // Verificar se a descrição é nula ou excede o limite de caracteres
+        if (body.getDescricao() == null || body.getDescricao().length() > 10) {
+            return Uni.createFrom().failure(new IllegalArgumentException("Descrição é obrigatória e deve ter no máximo 10 caracteres"));
+        }
+
         // Criar uma instância do PostResponseDTO
         PostResponseDTO response = new PostResponseDTO();
 
         // Criar uma instância da Transacao
         Transacao novaTransacao = new Transacao();
         novaTransacao.setClienteId(idCliente);
-        novaTransacao.setTipo(body.getTipo());
+        novaTransacao.setTipo(TipoTransacao.valueOf(body.getTipo()));
         novaTransacao.setValor(body.getValor());
         novaTransacao.setDescricao(body.getDescricao());
         novaTransacao.setData(String.valueOf(Timestamp.from(Instant.now())));
 
-        if (body.getDescricao().length() > 10) {
-            throw new IllegalArgumentException("Descrição deve ter no máximo 10 caracteres");
-        }
-
-        if (!(body.getValor() instanceof Long)) {
-            throw new IllegalArgumentException("Valor não é um numero valido");
-        }
 
         // Verificar se o cliente possui limite suficiente antes de persistir a transação
         return clienteRepository.findById(idCliente)
                 .onItem().transformToUni(cliente -> {
-                    if (body.getTipo().equals(TipoTransacao.c)) {
+                    if (TipoTransacao.valueOf(body.getTipo()).equals(TipoTransacao.c)) {
                         cliente.setSaldo(cliente.getSaldo() + body.getValor());
-                    } else if (body.getTipo().equals(TipoTransacao.d)) {
+                    } else if (TipoTransacao.valueOf(body.getTipo()).equals(TipoTransacao.d)) {
                         long novoSaldo = cliente.getSaldo() - body.getValor();
                         if (novoSaldo < -cliente.getLimite()) {
-                            throw new IllegalArgumentException("Limite insuficiente para realizar a transação de débito");
+                            return Uni.createFrom().failure(new IllegalArgumentException("Limite insuficiente para realizar a transação de débito"));
                         }
                         cliente.setSaldo(cliente.getSaldo() - body.getValor());
                     } else {
-                        throw new IllegalArgumentException("Tipo de transação não suportado: " + body.getTipo());
+                        return Uni.createFrom().failure(new IllegalArgumentException("Tipo de transação não suportado: " + body.getTipo()));
                     }
 
-                    return clienteRepository.persistOrUpdate(cliente).replaceWith(cliente);
+                    return clienteRepository.persistOrUpdate(cliente);
                 })
                 .onItem().transformToUni(clienteAtualizado -> transacaoRepository.persist(novaTransacao)
                         .map(transacaoPersistida -> {

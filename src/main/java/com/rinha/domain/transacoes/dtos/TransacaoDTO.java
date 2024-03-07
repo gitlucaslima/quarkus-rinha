@@ -1,14 +1,9 @@
 package com.rinha.domain.transacoes.dtos;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.sql.Timestamp;
 
-@Getter
-@Setter
 public class TransacaoDTO {
 
     private Long valor;
@@ -16,13 +11,35 @@ public class TransacaoDTO {
     private String descricao;
     private Timestamp realizada_em;
 
-    @Override
-    public String toString() {
-        return "TransacaoDTO{" +
-                "valor=" + valor +
-                ", tipo=" + tipo +
-                ", descricao='" + descricao + '\'' +
-                ", realizada_em=" + realizada_em +
-                '}';
+    public Long getValor() {
+        return valor;
+    }
+
+    public void setValor(Long valor) {
+        this.valor = valor;
+    }
+
+    public TipoTransacao getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(TipoTransacao tipo) {
+        this.tipo = tipo;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    public Timestamp getRealizada_em() {
+        return realizada_em;
+    }
+
+    public void setRealizada_em(Timestamp realizada_em) {
+        this.realizada_em = realizada_em;
     }
 }
