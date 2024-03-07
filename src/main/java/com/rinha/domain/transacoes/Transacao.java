@@ -1,5 +1,6 @@
 package com.rinha.domain.transacoes;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
@@ -20,6 +21,8 @@ public class Transacao extends ReactivePanacheMongoEntity implements Serializabl
     private TipoTransacao tipo;
     private Long valor;
     private String descricao;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private String data;
 
     public Transacao() {

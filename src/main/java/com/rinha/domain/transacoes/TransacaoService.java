@@ -83,7 +83,7 @@ public class TransacaoService {
             SaldoDTO saldo = new SaldoDTO();
             saldo.setTotal(cliente.getSaldo());
             saldo.setLimite(cliente.getLimite());
-            saldo.setData_extrato(Timestamp.from(Instant.now()));
+            saldo.setData_extrato(String.valueOf(Timestamp.from(Instant.now())));
             response.setSaldo(saldo);
 
             // Configurar Lista de Últimas Transações

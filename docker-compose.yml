@@ -3,17 +3,19 @@ version: "3.5"
 services:
   api01:
     &api
-    image: gitlucaslima/quarkus-dguerra:1.0
+    image: gitlucaslima/quarkus-dguerra:3.0
     hostname: api01
     environment:
       - DB_HOSTNAME=db
+      - QUARKUS_REDIS_HOST=redis
     depends_on:
       - db
+      - redis
     deploy:
       resources:
         limits:
-          cpus: "0.6"
-          memory: "200MB"
+          cpus: "0.47"
+          memory: "234MB"
     networks:
       - default
 
@@ -22,6 +24,7 @@ services:
     hostname: api02
     environment:
       - DB_HOSTNAME=db
+      - QUARKUS_REDIS_HOST=redis
 
   nginx:
     image: nginx:latest
@@ -36,8 +39,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.17"
-          memory: "10MB"
+          cpus: "0.10"
+          memory: "06MB"
 
   db:
     image: mongo
@@ -49,8 +52,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.6"
-          memory: "200MB"
+          cpus: "0.80"
+          memory: "180MB"
     networks:
       - default
 
