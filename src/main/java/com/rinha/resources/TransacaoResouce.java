@@ -2,10 +2,13 @@ package com.rinha.resources;
 
 import com.rinha.domain.transacoes.TransacaoService;
 import com.rinha.domain.transacoes.dtos.PostRequestDTO;
+import io.quarkus.arc.WithCaching;
+import io.quarkus.cache.CacheResult;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.inject.build.compatible.spi.Validation;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
@@ -25,6 +28,7 @@ public class TransacaoResouce {
     @Path("/{id}/transacoes")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
+    @Transactional
     public Uni<Response> transacoes(@PathParam("id") Long idCliente, @Valid PostRequestDTO body) {
         return transacaoService.realizarTransacao(idCliente, body).map(postResponseDTO -> Response.status(200).entity(postResponseDTO).build()).onFailure().recoverWithItem(throwable -> {
             if (throwable instanceof EntityNotFoundException) {
@@ -45,6 +49,7 @@ public class TransacaoResouce {
     @Path("/{id}/extrato")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
+    @CacheResult(cacheName = "extratos")
     public Uni<Response> extrato(@PathParam("id") Long id) {
         return transacaoService.getExtrato(id).map(getTransacaoDTO -> Response.status(200).entity(getTransacaoDTO).build()).onFailure().recoverWithItem(throwable -> {
             if (throwable instanceof EntityNotFoundException) {

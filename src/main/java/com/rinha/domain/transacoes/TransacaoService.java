@@ -3,9 +3,12 @@ package com.rinha.domain.transacoes;
 import com.rinha.domain.clientes.ClienteRepository;
 import com.rinha.domain.transacoes.dtos.*;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheResult;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -75,7 +78,8 @@ public class TransacaoService {
     }
 
 
-    public Uni<GetTransacaoDTO> getExtrato(Long id) {
+    @CacheResult(cacheName = "extrato")
+    public Uni<GetTransacaoDTO> getExtrato(@CacheKey Long id) {
         return clienteRepository.findById(id).onItem().transformToUni(cliente -> {
             GetTransacaoDTO response = new GetTransacaoDTO();
 

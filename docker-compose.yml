@@ -3,19 +3,22 @@ version: "3.5"
 services:
   api01:
     &api
-    image: gitlucaslima/quarkus-dguerra:3.0
+    image: gitlucaslima/quarkus-dguerra:4.0
     hostname: api01
     environment:
       - DB_HOSTNAME=db
-      - QUARKUS_REDIS_HOST=redis
+      - DB_POOL_SIZE=5
+      - WARMUP_ENABLED=true
+      - WARMUP_HOST=http://0.0.0.0:8080
+      - WARMUP_DELAY_SECONDS=3
+      - WARMUP_REQUESTS=50
     depends_on:
       - db
-      - redis
     deploy:
       resources:
         limits:
-          cpus: "0.47"
-          memory: "234MB"
+          cpus: "0.45"
+          memory: "100MB"
     networks:
       - default
 
@@ -24,7 +27,6 @@ services:
     hostname: api02
     environment:
       - DB_HOSTNAME=db
-      - QUARKUS_REDIS_HOST=redis
 
   nginx:
     image: nginx:latest
@@ -39,8 +41,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
-          memory: "06MB"
+          cpus: "0.20"
+          memory: "30MB"
 
   db:
     image: mongo
@@ -52,8 +54,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.80"
-          memory: "180MB"
+          cpus: "0.40"
+          memory: "220MB"
+    environment:
+      - MONGO_INITDB_MAX_CONNECTIONS=12
+      - MONGO_INITDB_WORK_MEM=4MB
+      - MONGO_INITDB_SYNC_COMMIT=false
+      - MONGO_INITDB_FSYNC=false
+      - MONGO_INITDB_FULL_PAGE_WRITES=false
+      - MONGO_INITDB_CHECKPOINT_TIMEOUT=600
+      - MONGO_INITDB_SHARED_BUFFERS=16MB
     networks:
       - default
 
