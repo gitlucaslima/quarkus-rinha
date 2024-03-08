@@ -1,14 +1,11 @@
 package com.rinha.domain.clientes;
 
-import com.rinha.domain.clientes.dtos.ClienteResponseDTO;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityNotFoundException;
-
-import java.util.List;
 
 @ApplicationScoped
 public class ClienteRepository implements ReactivePanacheMongoRepository<Cliente> {

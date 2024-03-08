@@ -12,8 +12,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.85"   # Distribuir 1 unidade de CPU para api01
-          memory: "180MB" # Distribuir 250MB de memória para api01
+          cpus: "0.525"
+          memory: "200MB"
     networks:
       - default
 
@@ -22,6 +22,8 @@ services:
     hostname: api02
     environment:
       - DB_HOSTNAME=db
+    networks:
+      - default
 
   nginx:
     image: nginx:latest
@@ -35,8 +37,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"   # Distribuir 0.5 unidades de CPU para nginx
-          memory: "06MB" # Distribuir 50MB de memória para nginx
+          cpus: "0.05"
+          memory: "10MB"
 
   db:
     image: mongo
@@ -48,8 +50,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.75"   # Distribuir 0.5 unidades de CPU para db
-          memory: "184MB" # Distribuir 200MB de memória para db
+          cpus: "0.4"
+          memory: "160MB"
+    networks:
+      - default
 
 networks:
   default:

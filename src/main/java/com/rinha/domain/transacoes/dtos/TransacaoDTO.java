@@ -3,13 +3,15 @@ package com.rinha.domain.transacoes.dtos;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
 
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Date;
 
 public class TransacaoDTO {
 
     private Long valor;
     private TipoTransacao tipo;
     private String descricao;
-    private Timestamp realizada_em;
+    private Date realizada_em;
 
     public Long getValor() {
         return valor;
@@ -35,11 +37,11 @@ public class TransacaoDTO {
         this.descricao = descricao;
     }
 
-    public Timestamp getRealizada_em() {
+    public Date getRealizada_em() {
         return realizada_em;
     }
 
-    public void setRealizada_em(Timestamp realizada_em) {
+    public void setRealizada_em(Date realizada_em) {
         this.realizada_em = realizada_em;
     }
 }

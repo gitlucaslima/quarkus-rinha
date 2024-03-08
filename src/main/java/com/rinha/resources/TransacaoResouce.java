@@ -28,7 +28,6 @@ public class TransacaoResouce {
     @Path("/{id}/transacoes")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @Transactional
     public Uni<Response> transacoes(@PathParam("id") Long idCliente, @Valid PostRequestDTO body) {
         return transacaoService.realizarTransacao(idCliente, body).map(postResponseDTO -> Response.status(200).entity(postResponseDTO).build()).onFailure().recoverWithItem(throwable -> {
             if (throwable instanceof EntityNotFoundException) {
@@ -49,9 +48,8 @@ public class TransacaoResouce {
     @Path("/{id}/extrato")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @CacheResult(cacheName = "extratos")
     public Uni<Response> extrato(@PathParam("id") Long id) {
-        return transacaoService.getExtrato(id).map(getTransacaoDTO -> Response.status(200).entity(getTransacaoDTO).build()).onFailure().recoverWithItem(throwable -> {
+        return transacaoService.extrato(id).map(getTransacaoDTO -> Response.status(200).entity(getTransacaoDTO).build()).onFailure().recoverWithItem(throwable -> {
             if (throwable instanceof EntityNotFoundException) {
                 return Response.status(Response.Status.NOT_FOUND).entity(throwable.getMessage()).build();
             }

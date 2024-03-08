@@ -13,9 +13,11 @@ public class PostRequestDTO {
     private Long valor;
 
     @NotNull(message = "Tipo é obrigatório")
+    @NotEmpty(message = "Tipo é obrigatório")
     private String tipo;
 
     @NotEmpty(message = "Descrição é obrigatória")
+    @NotNull(message = "Descrição é obrigatória")
     @Size(max = 10, message = "Descrição deve ter no máximo 10 caracteres")
     private String descricao;
 

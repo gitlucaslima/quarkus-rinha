@@ -1,6 +1,5 @@
 package com.rinha.domain.transacoes;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
@@ -9,6 +8,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Objects;
 
 
@@ -21,9 +21,7 @@ public class Transacao extends ReactivePanacheMongoEntity implements Serializabl
     private TipoTransacao tipo;
     private Long valor;
     private String descricao;
-
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private String data;
+    private Date data;
 
     public Transacao() {
     }
@@ -40,7 +38,7 @@ public class Transacao extends ReactivePanacheMongoEntity implements Serializabl
         return Objects.hash(getClienteId(), getTipo(), getValor(), getDescricao(), getData());
     }
 
-    public Transacao(Long clienteId, TipoTransacao tipo, Long valor, String descricao, String data) {
+    public Transacao(Long clienteId, TipoTransacao tipo, Long valor, String descricao, Date data) {
         this.clienteId = clienteId;
         this.tipo = tipo;
         this.valor = valor;
@@ -80,11 +78,11 @@ public class Transacao extends ReactivePanacheMongoEntity implements Serializabl
         this.descricao = descricao;
     }
 
-    public String getData() {
+    public Date getData() {
         return data;
     }
 
-    public void setData(String data) {
+    public void setData(Date data) {
         this.data = data;
     }
 }
