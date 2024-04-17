@@ -13,6 +13,7 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -56,6 +57,5 @@ public class TransacaoResouce {
             return Response.status(Response.Status.BAD_REQUEST).entity(throwable.getMessage()).build();
         });
     }
-
 
 }

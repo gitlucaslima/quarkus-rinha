@@ -1,18 +1,11 @@
 package com.rinha.domain.transacoes;
 
-import com.rinha.domain.clientes.Cliente;
 import com.rinha.domain.clientes.ClienteRepository;
 import com.rinha.domain.transacoes.dtos.*;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
-import io.quarkus.cache.CacheInvalidate;
-import io.quarkus.cache.CacheInvalidateAll;
-import io.quarkus.cache.CacheKey;
-import io.quarkus.cache.CacheResult;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import jakarta.ws.rs.client.Client;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -65,19 +58,19 @@ public class TransacaoService {
                 return Uni.createFrom().failure(new IllegalArgumentException("Tipo de transação não suportado: " + body.getTipo()));
             }
 
-            return Uni.combine().all().unis(clienteRepository.persistOrUpdate(cliente), transacaoRepository.persist(novaTransacao), this.invalidateCache(idCliente)).asTuple();
-        }).onItem().transform(tuple -> {
-            Cliente clienteAtualizado = tuple.getItem1();
-            PostResponseDTO response = new PostResponseDTO();
-            response.setLimite(clienteAtualizado.getLimite());
-            response.setSaldo(clienteAtualizado.getSaldo());
-            return response;
+            // Persistir a transação e atualizar o cliente
+            return transacaoRepository.persist(novaTransacao).onItem().transformToUni(ignore -> clienteRepository.persistOrUpdate(cliente))
+                    .onItem().transform(updatedCliente -> {
+                        PostResponseDTO response = new PostResponseDTO();
+                        response.setLimite(updatedCliente.getLimite());
+                        response.setSaldo(updatedCliente.getSaldo());
+                        return response;
+                    });
         });
     }
 
 
-    @CacheResult(cacheName = "extrato")
-    public Uni<GetTransacaoDTO> extrato(@CacheKey Long id) {
+    public Uni<GetTransacaoDTO> extrato(Long id) {
         return clienteRepository.findById(id).onItem().transformToUni(cliente -> {
             GetTransacaoDTO response = new GetTransacaoDTO();
 
@@ -101,11 +94,4 @@ public class TransacaoService {
                     .replaceWith(response); // Retornando a resposta completa
         });
     }
-
-    @CacheInvalidate(cacheName = "extrato")
-    public Uni<Void> invalidateCache(@CacheKey Long idCliente) {
-        return Uni.createFrom().nullItem();
-    }
-
-
 }
