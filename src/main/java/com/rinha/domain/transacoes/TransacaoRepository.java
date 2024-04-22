@@ -17,5 +17,4 @@ public class TransacaoRepository implements ReactivePanacheMongoRepository<Trans
         return find(query, sort, clienteId).list();
     }
 
-
 }

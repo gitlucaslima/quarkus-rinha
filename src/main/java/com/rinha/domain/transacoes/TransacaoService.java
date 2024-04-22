@@ -1,5 +1,9 @@
 package com.rinha.domain.transacoes;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.rinha.domain.clientes.ClienteRepository;
 import com.rinha.domain.transacoes.dtos.*;
 import com.rinha.domain.transacoes.enums.TipoTransacao;
@@ -7,8 +11,11 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.io.IOException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -20,6 +27,8 @@ public class TransacaoService {
     @Inject
     ClienteRepository clienteRepository;
 
+    @Inject
+    RedisService redisService;
 
     public Uni<PostResponseDTO> realizarTransacao(Long idCliente, PostRequestDTO body) {
         // Verificar se o valor é nulo ou menor que 1
@@ -59,39 +68,82 @@ public class TransacaoService {
             }
 
             // Persistir a transação e atualizar o cliente
-            return transacaoRepository.persist(novaTransacao).onItem().transformToUni(ignore -> clienteRepository.persistOrUpdate(cliente))
-                    .onItem().transform(updatedCliente -> {
-                        PostResponseDTO response = new PostResponseDTO();
-                        response.setLimite(updatedCliente.getLimite());
-                        response.setSaldo(updatedCliente.getSaldo());
-                        return response;
-                    });
+            return transacaoRepository.persist(novaTransacao).onItem().transformToUni(ignore -> clienteRepository.persistOrUpdate(cliente)).onItem().transform(updatedCliente -> {
+                PostResponseDTO response = new PostResponseDTO();
+                response.setLimite(updatedCliente.getLimite());
+                response.setSaldo(updatedCliente.getSaldo());
+
+                this.redisService.existsKey("extrato_" + idCliente.toString()).subscribe().with(exists -> {
+                    if (exists) {
+                        this.redisService.deleteReactiveKey("extrato_" + idCliente.toString());
+                    }
+                });
+                return response;
+            });
         });
     }
 
 
     public Uni<GetTransacaoDTO> extrato(Long id) {
-        return clienteRepository.findById(id).onItem().transformToUni(cliente -> {
-            GetTransacaoDTO response = new GetTransacaoDTO();
 
-            // Configurar Saldo
-            SaldoDTO saldo = new SaldoDTO();
-            saldo.setTotal(cliente.getSaldo());
-            saldo.setLimite(cliente.getLimite());
-            saldo.setData_extrato(String.valueOf(Timestamp.from(Instant.now())));
-            response.setSaldo(saldo);
-
-            // Configurar Lista de Últimas Transações
-            return transacaoRepository.findLast10ByClienteIdAndOrderByDataDesc(id).map(t -> t.stream().map(transacao -> {
+        return clienteRepository.findById(id).onItem().transformToUni(cliente -> redisService.getReactiveValue("extrato_" + id.toString()).flatMap(cachedExtrato -> {
+            System.out.println("dentro metodo extrato");
+            if (cachedExtrato != null && !cachedExtrato.isEmpty()) {
+                System.out.println("pesquisando no cache");
+                GetTransacaoDTO response = jsonToExtrato(cachedExtrato);
+                return Uni.createFrom().item(response);
+            } else {
+                // Se a lista de transações não estiver no cache ou estiver vazia, consultar o banco de dados
+                return transacaoRepository.findLast10ByClienteIdAndOrderByDataDesc(id).map(transacoes -> {
+                    System.out.println("pesquisando no banco de dados");
+                    GetTransacaoDTO response = new GetTransacaoDTO();
+                    // Converter as transações em DTO
+                    var transacoesDto = transacoes.stream().map(transacao -> {
                         TransacaoDTO transacaoDTO = new TransacaoDTO();
                         transacaoDTO.setTipo(transacao.getTipo());
                         transacaoDTO.setValor(transacao.getValor());
                         transacaoDTO.setDescricao(transacao.getDescricao());
                         transacaoDTO.setRealizada_em(transacao.getData());
                         return transacaoDTO;
-                    }).collect(Collectors.toList())) // Convertendo Stream para List
-                    .onItem().invoke(response::setUltimas_transacoes) // Configurando a resposta com as últimas transações
-                    .replaceWith(response); // Retornando a resposta completa
-        });
+                    }).collect(Collectors.toList());
+                    SaldoDTO saldo = new SaldoDTO();
+                    saldo.setLimite(cliente.getLimite());
+                    saldo.setTotal(cliente.getSaldo());
+                    saldo.setData_extrato(LocalDate.now().toString());
+                    response.setSaldo(saldo);
+                    response.setUltimas_transacoes(transacoesDto);
+                    return response;
+                }).onItem().transform(response -> {
+                    redisService.setReactiveValue("extrato_" + id.toString(), listTransacoesToJson(response));
+                    return response;
+                });
+            }
+        }));
     }
+
+    private GetTransacaoDTO jsonToExtrato(String extrato) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            // Usamos o TypeReference para indicar que estamos lendo uma lista de TransacaoDTO
+            return objectMapper.readValue(extrato, new TypeReference<GetTransacaoDTO>() {
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String listTransacoesToJson(GetTransacaoDTO extrato) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+
+        try {
+            return objectMapper.writeValueAsString(extrato);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }
